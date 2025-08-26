@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>T-Nova Fitness Library</title>
+  <!-- Load Tailwind CSS from CDN for modern styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom styles for a clean layout and smooth transitions */
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Style for the collapsible video container */
+    .video-container {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+    }
+    .video-container.open {
+        max-height: 500px; /* A value larger than the max height of the video */
+        padding-top: 1rem;
+    }
+    .edit-btn {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .card-hover:hover .edit-btn {
+        opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 sm:p-8">
+  <div class="max-w-5xl mx-auto">
+
+    <!-- Header and Controls -->
+    <header class="flex flex-col sm:flex-row justify-between items-center mb-8">
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white text-center sm:text-left mb-4 sm:mb-0">
+        T-Nova Fitness
+      </h1>
+      <button id="addNewBtn" class="px-4 py-2 rounded-full font-semibold transition-all duration-300 bg-cyan-500 text-white hover:bg-cyan-600 shadow-lg">
+        + Add New
+      </button>
+    </header>
+
+    <!-- Main Content Area: Exercise Gallery with Collapsible Videos -->
+    <main>
+      <!-- Exercise Library and Filter Buttons -->
+      <h2 class="text-2xl font-bold text-white mb-6">Exercise Library</h2>
+      <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+        <button id="muscleGroupFilterBtn" class="flex-1 px-4 py-2 rounded-full font-semibold transition-all duration-300 bg-orange-500 text-white shadow-lg">
+          Explore by Muscle Group
+        </button>
+        <button id="equipmentFilterBtn" class="flex-1 px-4 py-2 rounded-full font-semibold transition-all duration-300 bg-gray-700 text-gray-300 hover:bg-orange-600">
+          Explore by Equipment
+        </button>
+      </div>
+
+      <div id="exerciseGallery">
+        <!-- Exercise cards will be dynamically inserted here -->
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Modal for the input form -->
+  <div id="inputModal" class="fixed inset-0 bg-gray-950 bg-opacity-80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-8 relative">
+      <button id="closeModalBtn" class="absolute top-4 right-4 p-2 bg-gray-700 rounded-full text-gray-300 hover:bg-gray-600 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-white text-center">Add a New Exercise</h2>
+      <form id="addExerciseForm" class="flex flex-col space-y-4">
+        <!-- Hidden input to store exercise ID for editing -->
+        <input type="hidden" name="exerciseId" id="exerciseId">
+        <input type="text" name="name" placeholder="Exercise Name" class="w-full px-4 py-3 rounded-xl bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all" required />
+        <input type="url" name="url" placeholder="YouTube Link (e.g., https://www.youtube.com/watch?v=...)" class="w-full px-4 py-3 rounded-xl bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all" required />
+        <input type="text" name="startTime" placeholder="Start Time (e.g., 1:30 or 90)" class="w-full px-4 py-3 rounded-xl bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all" />
+        <input type="text" name="endTime" placeholder="End Time (e.g., 2:05 or 125)" class="w-full px-4 py-3 rounded-xl bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all" />
+        
+        <div class="flex items-center space-x-4">
+          <label for="type" class="text-gray-300 font-medium">Type:</label>
+          <select name="type" class="flex-grow px-4 py-3 rounded-xl bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all">
+            <option value="Exercise">Exercise</option>
+            <option value="Warm-up">Warm-up</option>
+          </select>
+        </div>
+
+        <!-- Dropdown for Muscle Group -->
+        <div class="flex items-center space-x-4">
+          <label for="muscleGroup" class="text-gray-300 font-medium">Muscle Group:</label>
+          <select name="muscleGroup" id="muscleGroup" class="flex-grow px-4 py-3 rounded-xl bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all">
+            <option value="">Select a group</option>
+            <option value="Triceps">Triceps</option>
+            <option value="Chest">Chest</option>
+            <option value="Biceps">Biceps</option>
+            <option value="Hamstrings">Hamstrings</option>
+            <option value="Abs">Abs</option>
+            <option value="Back">Back</option>
+            <option value="Quads">Quads</option>
+            <option value="Glutes">Glutes</option>
+            <option value="Shoulders">Shoulders</option>
+            <option value="Trapezius">Trapezius</option>
+            <option value="Forearms">Forearms</option>
+            <option value="Adductors">Adductors</option>
+            <option value="Abductors">Abductors</option>
+            <option value="Calves">Calves</option>
+            <option value="Lower Back">Lower Back</option>
+            <option value="Full Body">Full Body</option>
+          </select>
+        </div>
+
+        <!-- Dropdown for Equipment -->
+        <div class="flex items-center space-x-4">
+          <label for="equipment" class="text-gray-300 font-medium">Equipment:</label>
+          <select name="equipment" id="equipment" class="flex-grow px-4 py-3 rounded-xl bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all">
+            <option value="">Select equipment</option>
+            <option value="Bodyweight">Bodyweight</option>
+            <option value="Dumbbells">Dumbbells</option>
+            <option value="Barbell">Barbell</option>
+            <option value="Bands">Bands</option>
+            <option value="Cables">Cables</option>
+            <option value="Machine">Machine</option>
+            <option value="Stability Ball">Stability Ball</option>
+            <option value="Medicine Ball">Medicine Ball</option>
+            <option value="Ab Wheel">Ab Wheel</option>
+            <option value="Hex Bar">Hex Bar</option>
+            <option value="Battle Ropes">Battle Ropes</option>
+          </select>
+        </div>
+
+        <button type="submit" id="submitBtn" class="mt-4 w-full bg-cyan-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-300">
+          Add Exercise
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Initial data for the exercise library with real YouTube links and times
+    const exercises = [
+      { id: 'warmup-1', name: 'Bodyweight Squats', url: 'https://www.youtube.com/watch?v=P-yaD24bUE8', type: 'Warm-up', muscleGroup: 'Quads', equipment: 'Bodyweight', startTime: '0:18', endTime: '0:45' },
+      { id: 'warmup-2', name: 'Inchworm to Plank', url: 'https://www.youtube.com/watch?v=aFkv2m9FTGs', type: 'Warm-up', muscleGroup: 'Full Body', equipment: 'Bodyweight', startTime: '0:06', endTime: '0:25' },
+      { id: 'warmup-3', name: 'Reverse Lunge with Torso Rotation', url: 'https://www.youtube.com/watch?v=LrIE5onzj68', type: 'Warm-up', muscleGroup: 'Quads', equipment: 'Bodyweight', startTime: '0:10', endTime: '0:25' },
+      { id: 'warmup-4', name: 'Band Pull-Apart', url: 'https://www.youtube.com/watch?v=3OYSIWaJJk4', type: 'Warm-up', muscleGroup: 'Trapezius', equipment: 'Bands', startTime: '0:12', endTime: '0:30' },
+      { id: 'warmup-5', name: 'Hip Hinge with Reach', url: 'https://www.youtube.com/watch?v=y-tKI3xVdbY', type: 'Warm-up', muscleGroup: 'Hamstrings', equipment: 'Bodyweight', startTime: '0:50', endTime: '1:10' },
+      { id: 'warmup-6', name: 'Leg Swings', url: 'https://www.youtube.com/watch?v=F9ThpdIJLtE', type: 'Warm-up', muscleGroup: 'Legs', equipment: 'Bodyweight', startTime: '0:03', endTime: '0:18' },
+      { id: 'warmup-7', name: 'World’s Greatest Stretch', url: 'https://www.youtube.com/watch?v=OvObOV0WrKw', type: 'Warm-up', muscleGroup: 'Full Body', equipment: 'Bodyweight', startTime: '0:06', endTime: '0:25' },
+      { id: 'warmup-8', name: 'Side Lunge', url: 'https://www.youtube.com/watch?v=rvqLVxYqEvo', type: 'Warm-up', muscleGroup: 'Adductors', equipment: 'Bodyweight', startTime: '0:20', endTime: '0:40' },
+      { id: 'exercise-1', name: 'Heel Elevated Back Squat', url: 'https://www.youtube.com/watch?v=ty3H9rtBAjY', type: 'Exercise', muscleGroup: 'Quads', equipment: 'Barbell', startTime: '0:15', endTime: '0:50' },
+      { id: 'exercise-2', name: 'Neutral Grip Assisted Chin Up', url: 'https://www.youtube.com/watch?v=npwvTD_17Eo', type: 'Exercise', muscleGroup: 'Back', equipment: 'Machine', startTime: '0:10', endTime: '0:25' },
+      { id: 'exercise-3', name: 'Stability Ball Pull In', url: 'https://www.youtube.com/watch?v=W9gU1J2hKzk', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Stability Ball', startTime: '0:10', endTime: '0:30' },
+      { id: 'exercise-4', name: 'Lateral Lunge', url: 'https://www.youtube.com/watch?v=qCA8E-dF8cI', type: 'Exercise', muscleGroup: 'Abductors', equipment: 'Dumbbells', startTime: '0:35', endTime: '1:00' },
+      { id: 'exercise-5', name: 'DB Chest Flyes', url: 'https://www.youtube.com/watch?v=atcyT99YDeI', type: 'Exercise', muscleGroup: 'Chest', equipment: 'Dumbbells', startTime: '0:05', endTime: '0:20' },
+      { id: 'exercise-6', name: 'Ab Wheel Rollout', url: 'https://www.youtube.com/watch?v=_BHKT60P6bc', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Ab Wheel', startTime: '0:05', endTime: '0:25' },
+      { id: 'exercise-7', name: 'RDL', url: 'https://www.youtube.com/watch?v=4-G2V721sHk', type: 'Exercise', muscleGroup: 'Hamstrings', equipment: 'Dumbbells', startTime: '0:10', endTime: '0:35' },
+      { id: 'exercise-8', name: 'Seated Cable Row', url: 'https://www.youtube.com/watch?v=J_kMvY-cW1Y', type: 'Exercise', muscleGroup: 'Back', equipment: 'Cables', startTime: '0:12', endTime: '0:30' },
+      { id: 'exercise-9', name: 'Crunches with Medicine Ball', url: 'https://www.youtube.com/watch?v=k9ju4qloS_o', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Medicine Ball', startTime: '0:00', endTime: '0:20' },
+      { id: 'exercise-10', name: 'Hex Bar Deadlift (No reset)', url: 'https://www.youtube.com/watch?v=1jC_nqcSCp8', type: 'Exercise', muscleGroup: 'Glutes', equipment: 'Hex Bar', startTime: '0:10', endTime: '0:40' },
+      { id: 'exercise-11', name: 'Neutral Band Pull Up', url: 'https://www.youtube.com/watch?v=CcSKoDZU-TE', type: 'Exercise', muscleGroup: 'Back', equipment: 'Bands', startTime: '0:15', endTime: '0:45' },
+      { id: 'exercise-12', name: 'Side Plank Dips', url: 'https://www.youtube.com/watch?v=i94A1v-aQjA', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Bodyweight', startTime: '0:05', endTime: '0:30' },
+      { id: 'exercise-13', name: 'Split Squat', url: 'https://www.youtube.com/watch?v=o7yFuIR9XVU', type: 'Exercise', muscleGroup: 'Quads', equipment: 'Dumbbells', startTime: '0:20', endTime: '0:45' },
+      { id: 'exercise-14', name: 'Cable Front Raise', url: 'https://www.youtube.com/watch?v=RIAfO1-M_F4', type: 'Exercise', muscleGroup: 'Shoulders', equipment: 'Cables', startTime: '0:00', endTime: '0:20' },
+      { id: 'exercise-15', name: 'Ball Cobra', url: 'https://www.youtube.com/watch?v=Ebv2o_VioHY', type: 'Exercise', muscleGroup: 'Shoulders', equipment: 'Stability Ball', startTime: '0:15', endTime: '0:40' },
+      { id: 'exercise-16', name: 'Seated Hamstring Curl', url: 'https://www.youtube.com/watch?v=O7ScSob1c-A', type: 'Exercise', muscleGroup: 'Hamstrings', equipment: 'Machine', startTime: '0:10', endTime: '0:30' },
+      { id: 'exercise-17', name: 'Shotgun Row', url: 'https://www.youtube.com/watch?v=CAfG5bkeMKQ', type: 'Exercise', muscleGroup: 'Back', equipment: 'Cables', startTime: '0:15', endTime: '0:40' },
+      { id: 'exercise-18', name: 'Russian Twist', url: 'https://www.youtube.com/watch?v=4wNNCQj2mV4', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Medicine Ball', startTime: '0:10', endTime: '0:25' },
+      { id: 'exercise-19', name: 'Battle Ropes', url: 'https://www.youtube.com/watch?v=pQb2xIGioyQ', type: 'Exercise', muscleGroup: 'Full Body', equipment: 'Battle Ropes', startTime: '0:05', endTime: '0:25' },
+      { id: 'exercise-20', name: 'Lat Pulldown Wide Grip', url: 'https://www.youtube.com/watch?v=uAcQQ9jp2zk', type: 'Exercise', muscleGroup: 'Back', equipment: 'Cables', startTime: '0:00', endTime: '0:20' },
+      { id: 'exercise-21', name: 'Neutral Grip Chin Ups', url: 'https://www.youtube.com/watch?v=hDNy0jFYZvY', type: 'Exercise', muscleGroup: 'Back', equipment: 'Bodyweight', startTime: '0:05', endTime: '0:25' },
+      { id: 'exercise-22', name: 'Windshield Wipers', url: 'https://www.youtube.com/watch?v=Yf-bE7T0r8k', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Bodyweight', startTime: '0:10', endTime: '0:30' },
+      { id: 'exercise-23', name: 'Dumbbell Step Up', url: 'https://www.youtube.com/watch?v=XlXe_k5QR8s', type: 'Exercise', muscleGroup: 'Quads', equipment: 'Dumbbells', startTime: '0:00', endTime: '0:20' },
+      { id: 'exercise-24', name: 'Bench Chest Press', url: 'https://www.youtube.com/watch?v=wzq57DB5Ppg', type: 'Exercise', muscleGroup: 'Chest', equipment: 'Dumbbells', startTime: '0:10', endTime: '0:40' },
+      { id: 'exercise-25', name: 'Single Arm Plank', url: 'https://www.youtube.com/watch?v=OGPLvnb2Y8U', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Bodyweight', startTime: '0:10', endTime: '0:30' },
+      { id: 'exercise-26', name: 'Single Leg RDL', url: 'https://www.youtube.com/watch?v=iS7atZhcRnw', type: 'Exercise', muscleGroup: 'Hamstrings', equipment: 'Dumbbells', startTime: '0:05', endTime: '0:35' },
+      { id: 'exercise-27', name: 'Shoulder Taps (High Plank)', url: 'https://www.youtube.com/watch?v=N1fOPufXOuY', type: 'Exercise', muscleGroup: 'Shoulders', equipment: 'Bodyweight', startTime: '0:15', endTime: '0:30' },
+      { id: 'exercise-28', name: 'Dumbbell Reverse Lunge', url: 'https://www.youtube.com/watch?v=zZaXHwFf9r8', type: 'Exercise', muscleGroup: 'Quads', equipment: 'Dumbbells', startTime: '0:05', endTime: '0:45' },
+      { id: 'exercise-29', name: 'BB Bent-Over Rows', url: 'https://www.youtube.com/watch?v=TeUzJmU25Rc', type: 'Exercise', muscleGroup: 'Back', equipment: 'Barbell', startTime: '0:15', endTime: '0:40' },
+      { id: 'exercise-30', name: 'Ab Rollout', url: 'https://www.youtube.com/watch?v=42hHDHxEaFc', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Ab Wheel', startTime: '0:20', endTime: '0:50' },
+      { id: 'exercise-31', name: 'Crunches with Medicine Ball', url: 'https://www.youtube.com/watch?v=k9ju4qloS_o', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Medicine Ball', startTime: '0:00', endTime: '0:20' },
+      { id: 'exercise-32', name: 'Hex Bar Deadlift (No reset)', url: 'https://www.youtube.com/watch?v=1jC_nqcSCp8', type: 'Exercise', muscleGroup: 'Glutes', equipment: 'Hex Bar', startTime: '0:10', endTime: '0:40' },
+      { id: 'exercise-33', name: 'Neutral Band Pull Up', url: 'https://www.youtube.com/watch?v=CcSKoDZU-TE', type: 'Exercise', muscleGroup: 'Back', equipment: 'Bands', startTime: '0:15', endTime: '0:45' },
+      { id: 'exercise-34', name: 'Side Plank Dips', url: 'https://www.youtube.com/watch?v=i94A1v-aQjA', type: 'Exercise', muscleGroup: 'Abs', equipment: 'Bodyweight', startTime: '0:05', endTime: '0:30' },
+    ];
+    
+    // Group exercises by muscle group
+    function getGroupedExercises(key) {
+        const groups = {};
+        exercises.forEach(ex => {
+            const groupName = ex[key] || 'Uncategorized';
+            if (!groups[groupName]) {
+                groups[groupName] = [];
+            }
+            groups[groupName].push(ex);
+        });
+        return groups;
+    }
+
+    // Get DOM elements
+    const exerciseGallery = document.getElementById('exerciseGallery');
+    const addNewBtn = document.getElementById('addNewBtn');
+    const inputModal = document.getElementById('inputModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const addExerciseForm = document.getElementById('addExerciseForm');
+    const modalTitle = document.getElementById('modalTitle');
+    const submitBtn = document.getElementById('submitBtn');
+    const muscleGroupFilterBtn = document.getElementById('muscleGroupFilterBtn');
+    const equipmentFilterBtn = document.getElementById('equipmentFilterBtn');
+
+    // Function to render an icon based on exercise type
+    function renderIcon(type) {
+      const isWarmup = type === 'Warm-up';
+      const colorClass = isWarmup ? 'bg-orange-500' : 'bg-cyan-500';
+      const svg = isWarmup
+        ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+           </svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7a4 4 0 100 8a4 4 0 000-8zm-6 8a4 4 0 100 8a4 4 0 000-8zM4 16v-1a3 3 0 00-3-3H1.5L2 15z" />
+           </svg>`;
+      return `<div class="p-2 rounded-full ${colorClass} text-white">${svg}</div>`;
+    }
+
+    // Function to extract YouTube video ID from a URL
+    function getYouTubeId(url) {
+      try {
+        const urlObject = new URL(url);
+        const params = new URLSearchParams(urlObject.search);
+        return params.get('v');
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Function to convert MM:SS or SS format to total seconds
+    function parseTimeToSeconds(timeString) {
+      if (!timeString) return ''; // Return empty string if not provided
+      const parts = timeString.split(':');
+      if (parts.length === 2) {
+        const minutes = parseInt(parts[0], 10);
+        const seconds = parseInt(parts[1], 10);
+        return (minutes * 60) + seconds;
+      }
+      return parseInt(timeString, 10);
+    }
+    
+    // Function to find an exercise by its ID
+    function findExerciseById(id) {
+        return exercises.find(ex => ex.id === id);
+    }
+    
+    // Function to handle editing an exercise
+    function editExercise(id) {
+        const exercise = findExerciseById(id);
+        if (exercise) {
+            modalTitle.textContent = 'Edit Exercise';
+            submitBtn.textContent = 'Save Changes';
+            addExerciseForm.exerciseId.value = exercise.id;
+            addExerciseForm.name.value = exercise.name;
+            addExerciseForm.url.value = exercise.url;
+            addExerciseForm.startTime.value = exercise.startTime;
+            addExerciseForm.endTime.value = exercise.endTime;
+            addExerciseForm.type.value = exercise.type;
+            addExerciseForm.muscleGroup.value = exercise.muscleGroup || '';
+            addExerciseForm.equipment.value = exercise.equipment || '';
+            showInputModal();
+        }
+    }
+
+    // Function to render the exercises for a given group
+    function renderExercises(container, filteredExercises) {
+      container.innerHTML = '';
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4';
+      
+      filteredExercises.forEach(exercise => {
+        const card = document.createElement('div');
+        card.className = 'bg-gray-800 rounded-2xl p-6 shadow-xl flex flex-col transition-transform duration-300 card-hover';
+        card.innerHTML = `
+          <!-- Card header with icon and name -->
+          <div class="flex items-center space-x-4 cursor-pointer">
+            <div class="flex-shrink-0">
+              ${renderIcon(exercise.type)}
+            </div>
+            <div class="flex-grow">
+              <h3 class="text-xl font-bold text-white mb-1">${exercise.name}</h3>
+              <p class="font-semibold text-sm ${exercise.type === 'Warm-up' ? 'text-orange-400' : 'text-cyan-400'}">
+                ${exercise.type}
+              </p>
+            </div>
+             <button class="edit-btn p-2 rounded-full bg-gray-700 text-gray-300 hover:bg-orange-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+            </button>
+          </div>
+          <!-- Video container (initially hidden) -->
+          <div id="video-${exercise.id}" class="video-container">
+            <div class="aspect-w-16 aspect-h-9 w-full rounded-xl overflow-hidden">
+              <iframe
+                class="w-full h-full rounded-xl"
+                src=""
+                title="${exercise.name}"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
+            </div>
+          </div>
+        `;
+        // Add click event to toggle the video display
+        card.querySelector('.flex-grow').closest('.flex').addEventListener('click', (e) => {
+            if (e.target.closest('.edit-btn')) return; // Ignore click if it's on the edit button
+            const videoContainer = document.getElementById(`video-${exercise.id}`);
+            const iframe = videoContainer.querySelector('iframe');
+            if (videoContainer.classList.contains('open')) {
+                // If the video is already open, close it
+                videoContainer.classList.remove('open');
+                // Stop the video by removing the src
+                iframe.src = ''; 
+            } else {
+                // Close any other open videos
+                document.querySelectorAll('.video-container.open').forEach(container => {
+                    container.classList.remove('open');
+                    container.querySelector('iframe').src = '';
+                });
+
+                // Open the clicked video
+                videoContainer.classList.add('open');
+                // Start the video by setting the src with start/end times
+                const startSeconds = parseTimeToSeconds(exercise.startTime);
+                const endSeconds = parseTimeToSeconds(exercise.endTime);
+                let youtubeUrl = `https://www.youtube.com/embed/${getYouTubeId(exercise.url)}?rel=0&autoplay=1`;
+                if (startSeconds) youtubeUrl += `&start=${startSeconds}`;
+                if (endSeconds) youtubeUrl += `&end=${endSeconds}`;
+                iframe.src = youtubeUrl;
+            }
+        });
+        
+        // Add click event for the edit button
+        card.querySelector('.edit-btn').addEventListener('click', () => editExercise(exercise.id));
+
+        grid.appendChild(card);
+      });
+      container.appendChild(grid);
+    }
+    
+    // Function to render the exercise cards in the gallery, grouped by category
+    function renderExerciseGallery(groupBy = 'muscleGroup') {
+      // Clear previous content
+      exerciseGallery.innerHTML = '';
+      
+      const groups = getGroupedExercises(groupBy);
+
+      // Helper function to create a collapsible section
+      function createCollapsibleSection(title, groups) {
+        const sectionContainer = document.createElement('div');
+        sectionContainer.className = 'mb-8';
+        
+        for (const group in groups) {
+            const groupContainer = document.createElement('div');
+            groupContainer.className = 'mb-4';
+
+            // Create collapsible tab header
+            const tabHeader = document.createElement('div');
+            tabHeader.className = 'flex justify-between items-center bg-gray-700 p-4 rounded-xl cursor-pointer hover:bg-gray-600 transition-colors duration-300';
+            tabHeader.innerHTML = `
+              <h4 class="text-lg font-bold text-white">${group}</h4>
+              <svg class="h-6 w-6 text-gray-400 transform transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            `;
+            const contentContainer = document.createElement('div');
+            contentContainer.className = 'hidden';
+            
+            tabHeader.addEventListener('click', () => {
+                const icon = tabHeader.querySelector('svg');
+                contentContainer.classList.toggle('hidden');
+                icon.classList.toggle('rotate-180');
+            });
+
+            renderExercises(contentContainer, groups[group]);
+            groupContainer.appendChild(tabHeader);
+            groupContainer.appendChild(contentContainer);
+            sectionContainer.appendChild(groupContainer);
+        }
+        return sectionContainer;
+      }
+
+      // Render the correct section based on the filter
+      if (groupBy === 'muscleGroup') {
+          exerciseGallery.appendChild(createCollapsibleSection('Explore by Muscle Group', groups));
+      } else if (groupBy === 'equipment') {
+          exerciseGallery.appendChild(createCollapsibleSection('Explore by Equipment', groups));
+      }
+    }
+    
+    // Function to show the input modal
+    function showInputModal() {
+      inputModal.classList.remove('hidden');
+    }
+    
+    // Function to hide the input modal and reset form
+    function hideInputModal() {
+      inputModal.classList.add('hidden');
+      addExerciseForm.reset();
+      modalTitle.textContent = 'Add a New Exercise';
+      submitBtn.textContent = 'Add Exercise';
+      addExerciseForm.exerciseId.value = '';
+    }
+
+    // Handle form submission inside the modal
+    addExerciseForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const exerciseId = addExerciseForm.exerciseId.value;
+      const newName = addExerciseForm.name.value;
+      const newUrl = addExerciseForm.url.value;
+      const newType = addExerciseForm.type.value;
+      const newMuscleGroup = addExerciseForm.muscleGroup.value;
+      const newEquipment = addExerciseForm.equipment.value;
+      const newStartTime = addExerciseForm.startTime.value;
+      const newEndTime = addExerciseForm.endTime.value;
+
+      if (newName && getYouTubeId(newUrl)) {
+        if (exerciseId) {
+            // Find and update the existing exercise
+            const index = exercises.findIndex(ex => ex.id === exerciseId);
+            if (index !== -1) {
+                exercises[index] = {
+                    ...exercises[index],
+                    name: newName,
+                    url: newUrl,
+                    type: newType,
+                    muscleGroup: newMuscleGroup,
+                    equipment: newEquipment,
+                    startTime: newStartTime,
+                    endTime: newEndTime
+                };
+            }
+        } else {
+            // Add a new exercise
+            exercises.push({
+                id: 'exercise-' + Date.now(),
+                name: newName,
+                url: newUrl,
+                type: newType,
+                muscleGroup: newMuscleGroup,
+                equipment: newEquipment,
+                startTime: newStartTime,
+                endTime: newEndTime
+            });
+        }
+        hideInputModal();
+        renderExerciseGallery(); // Re-render the gallery to show the new/updated exercise
+      } else {
+        // Display an error message directly on the form
+        let errorMessage = addExerciseForm.querySelector('.text-red-400');
+        if (!errorMessage) {
+            errorMessage = document.createElement('p');
+            errorMessage.className = 'text-center text-red-400 mt-4 font-semibold';
+            addExerciseForm.appendChild(errorMessage);
+        }
+        errorMessage.textContent = 'Invalid input. Please provide a name and a valid YouTube URL.';
+      }
+    });
+
+    // Event listeners for filter buttons
+    muscleGroupFilterBtn.addEventListener('click', () => {
+        renderExerciseGallery('muscleGroup');
+        muscleGroupFilterBtn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-orange-600');
+        muscleGroupFilterBtn.classList.add('bg-orange-500', 'text-white', 'shadow-lg');
+        equipmentFilterBtn.classList.remove('bg-orange-500', 'text-white', 'shadow-lg');
+        equipmentFilterBtn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-orange-600');
+    });
+
+    equipmentFilterBtn.addEventListener('click', () => {
+        renderExerciseGallery('equipment');
+        equipmentFilterBtn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-orange-600');
+        equipmentFilterBtn.classList.add('bg-orange-500', 'text-white', 'shadow-lg');
+        muscleGroupFilterBtn.classList.remove('bg-orange-500', 'text-white', 'shadow-lg');
+        muscleGroupFilterBtn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-orange-600');
+    });
+
+    addNewBtn.addEventListener('click', showInputModal);
+    closeModalBtn.addEventListener('click', hideInputModal);
+    window.addEventListener('load', () => renderExerciseGallery('muscleGroup'));
+    
+  </script>
+</body>
+</html>
